@@ -1,11 +1,11 @@
 import { Component } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import {Searchbar} from './Searchbar/Searchbar';
+import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { fetchImages } from '../services/fetch';
-import {Button} from './Button/Button';
-import {Loader} from './Loader/Loader';
+import { Button } from './Button/Button';
+import { Loader } from './Loader/Loader';
 
 export class App extends Component {
   state = {
@@ -14,23 +14,24 @@ export class App extends Component {
     searchResult: [],
     isLoading: false,
     error: null,
+    total: 0,
   };
 
   componentDidUpdate(prevProps, prevState) {
-    const { searchQuery, page } = this.state;
-    if (prevState.searchQuery !== searchQuery) {
+    const { searchQuery, page, error } = this.state;
+    if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
       this.fetchHandler();
     }
-    if (
-      prevState.page !== page &&
-      prevState.searchQuery === this.state.searchQuery
-    ) {
-      this.fetchHandler();
+
+    if (prevState.error !== error && error) {
+      toast(error, {
+        theme: 'dark',
+      });
     }
   }
 
   handleFormSubmit = searchQuery => {
-    this.setState({ searchQuery, page: 1, searchResult: [] });
+    this.setState({ searchQuery, page: 1, searchResult: [], total: 0 });
   };
 
   toggleLoader = () => {
@@ -43,17 +44,24 @@ export class App extends Component {
     fetchImages(searchQuery, page)
       .then(result => {
         if (result.hits.length === 0) {
-          this.setState({ searchResult: [], page: 1 });
           return toast(
             `There are no images by search request "${searchQuery}"`,
             { theme: 'dark' }
           );
         }
+
+        // const images = result.hits.map(({ id, tags }) => ({
+        //   id,
+        //   tags,
+        // }));
+
         this.setState(prevState => ({
           searchResult: [...prevState.searchResult, ...result.hits],
+          total: result.totalHits,
+          error: '',
         }));
       })
-      .catch(error => this.setState({ error }))
+      .catch(error => this.setState({ error: 'Not found' }))
       .finally(() => {
         this.toggleLoader();
       });
@@ -64,7 +72,7 @@ export class App extends Component {
   };
 
   render() {
-    const { isLoading, searchResult } = this.state;
+    const { isLoading, searchResult, total } = this.state;
     return (
       <div className="app">
         <Searchbar onSubmit={this.handleFormSubmit} />
@@ -72,7 +80,7 @@ export class App extends Component {
           <ImageGallery searchResult={searchResult} />
         )}
         {isLoading && <Loader />}
-        {searchResult.length > 0 && !isLoading && (
+        {total !== searchResult.length && !isLoading && (
           <Button onClick={this.onLoadMoreClick} />
         )}
         <ToastContainer theme="dark" />

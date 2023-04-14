@@ -5,7 +5,9 @@ import { AiOutlineSearch } from 'react-icons/ai';
 export const Searchbar = ({ onSubmit }) => {
   const handleFormSubmit = e => {
     e.preventDefault();
-    onSubmit(e.target.elements.input.value);
+    const query = e.target.elements.input.value.toLowerCase().trim();
+    if (!query) return;
+    onSubmit(query);
   };
 
   return (
